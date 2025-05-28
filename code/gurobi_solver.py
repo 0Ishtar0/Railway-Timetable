@@ -89,7 +89,8 @@ class GurobiSolver(RailwayTimetablingSolver):
             for t_arr in self.time_points:
                 from_n: Node = NodeInfo('U', self.num_stations - 1, t_arr)
                 to_n: Node = self.node_tau
-                var = self.model.addVar(vtype=var_type, name=f"x_{train_id}_from_{from_n}_to_{to_n}")
+                var = self.model.addVar(
+                    vtype=var_type, name=f"x_{train_id}_from_{from_n}_to_{to_n}")
                 x[train_id, from_n, to_n] = var
                 arcs_for_train[train_id].append((from_n, to_n))
                 arcs_leaving_node[from_n][train_id].append(var)
