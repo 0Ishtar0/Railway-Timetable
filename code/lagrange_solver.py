@@ -20,9 +20,9 @@ class LagrangianRelaxationSolver(GraphBasedSolver):
                  min_stop_dwell: int = 2,
                  max_stop_dwell: int = 15,
                  pass_dwell: int = 0,
-                 max_iterations: int = 50,  # As per typical experiment sizes e.g. [cite: 77]
-                 initial_eta: float = 0.1,  # Step size for lambda update
-                 eta_decay_factor: float = 0.995,  # Decay for eta
+                 max_iterations: int = 50,
+                 initial_eta: float = 0.1,
+                 eta_decay_factor: float = 0.995,
                  objective_type: Literal["max_trains", "min_total_runtime"] = "max_trains",
                  verbose: bool = False):
         super().__init__(stations, station_mileages, train_specs, block_section_times,
@@ -118,11 +118,6 @@ class LagrangianRelaxationSolver(GraphBasedSolver):
                           train_subproblem_results: list[tuple[str,
                           list[ArcKey], float, float, set[NodeInfo]]]
                           ) -> tuple[dict[ArcKey, float], float, set[NodeInfo]]:
-        """
-        Constructs a feasible timetable using Algorithm 1 from the PDF[cite: 56, 58, 59, 60].
-        Trains are sorted by their dual objective value (path_dual_profit).
-        """
-        # Sort trains by dual_profit_on_path (descending) [cite: 59]
         sorted_trains_data = sorted(train_subproblem_results, key=lambda x: x[3], reverse=True)
 
         feasible_timetable_arcs: dict[ArcKey, float] = {}  # Stores the final feasible paths
