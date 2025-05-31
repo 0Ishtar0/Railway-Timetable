@@ -156,7 +156,7 @@ class GurobiSolver(RailwayTimetablingSolver):
                     arcs_entering_node[node_v_key].get(train_id, []))
                 self.model.addConstr(
                     z[train_id, node_v_key.type, node_v_key.station_idx,
-                        node_v_key.time] == sum_incoming_x_train_node,
+                    node_v_key.time] == sum_incoming_x_train_node,
                     name=f"ZLink_{train_id}_{node_v_key}")
 
         # Node Occupation: Any Train (y_v)
@@ -253,7 +253,8 @@ if __name__ == "__main__":
         headway=5,
         min_stop_dwell=2,
         max_stop_dwell=15,
-        pass_dwell=0
+        pass_dwell=0,
+        objective_type="min_makespan"  # Change to "min_sum_arrival" or "feasibility" as needed
     )
     solution = solver.solve()
 

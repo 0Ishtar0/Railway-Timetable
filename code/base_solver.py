@@ -31,6 +31,7 @@ class RailwayTimetablingSolver:
         self.pass_dwell: int = pass_dwell
         self.node_sigma: str = "sigma"
         self.node_tau: str = "tau"
+        self.objective_type: str = "None"
 
         self.runtimes: dict[RuntimeKey, int] = {}
         for i in range(self.num_stations - 1):
@@ -168,7 +169,7 @@ class RailwayTimetablingSolver:
         plt.tight_layout()
 
         try:
-            plt.savefig("train_timetable_plot.pdf")
+            plt.savefig(f"train_timetable_plot.pdf")
             print("Timetable plot saved to train_timetable_plot.pdf")
             plt.show()
         except Exception as e:
