@@ -1,0 +1,150 @@
+\documentclass{article}
+\usepackage{CJKutf8}
+
+
+% if you need to pass options to natbib, use, e.g.:
+%     \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips_2022
+
+
+% ready for submission
+
+
+% to compile a preprint version, e.g., for submission to arXiv, add add the
+% [preprint] option:
+%     \usepackage[preprint]{neurips_2022}
+
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+\usepackage[final]{neurips_2022}
+\usepackage{ctex}
+
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URM typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{float} % 用来修正浮动对象的位置
+\usepackage{amsmath} % 数学公式支持
+\usepackage{algorithm}
+\usepackage{algpseudocode} % 算法伪代码
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{bm}             % bold math symbols
+\usepackage{graphicx}       % include graphics
+\usepackage{subfigure}
+\usepackage{listings}
+
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\title{大数据分析中的算法期末上机报告}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to MaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if MaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+
+\author{%
+    \large 陈润璘 \\
+    \large \texttt{2200010848}
+    \And
+    \large 任子博 \\
+    \large \texttt{2200010626}
+}
+
+
+\begin{document}
+
+
+    \maketitle
+
+
+    \section{问题描述}
+
+    \subsection*{问题背景}
+    铁路列车时刻表问题旨在通过一个0-1整数规划模型来确定一个无冲突的列车运行计划。该模型基于时空网络构建，目标是最大化某种意义上的“利润”。
+    \subsection*{目标函数}
+    模型的目标是最大化所有调度列车在各自路径上所选弧（路段或车站停驻）的“利润”之和：
+    \begin{equation}
+        \max \sum_{j \in J} \sum_{e \in E_j} p_e x_e\label{eq:obj}
+    \end{equation}
+    其中，$p_e$ 是使用弧 $e$ 的“利润”值。在实现中，“利润”可以有多种实际含义，例如：若将始发弧的利润设为1，其他为0，则目标是最大化运行的列车数量；若将$p_e$设为路段运行时间的相反数，则目标是最小化总运行时间。
+
+    \subsection*{决策变量}
+    \begin{itemize}
+        \item $x_e \in \{0,1\}$: 二元决策变量。如果弧 $e \in E$ 被某列车占用，则 $x_e = 1$；否则为 $0$ 。
+        \item $z_{jv}$: 辅助二元变量。如果节点 $v \in V_j$ 被列车 $j \in J$ 占用，则 $z_{jv} = 1$；否则为 $0$ 。它由 $x_e$ 导出。
+        \item $y_v$: 辅助二元变量。如果节点 $v \in V_j$ 被任何列车占用，则 $y_v = 1$；否则为 $0$ 。它由 $z_{jv}$ 导出。
+    \end{itemize}
+
+    \subsection*{模型参数}
+    \begin{itemize}
+        \item $J$: 所有列车的集合 。
+        \item $E_j$: 列车 $j$ 在时空网络中可使用的弧（arc）的集合。
+        \item $E$: 时空网络中所有弧的集合, $E = \bigcup_{j \in J} E_j$ 。
+        \item $V_j$: 列车 $j$ 在时空网络中可访问的节点（node）的集合 。
+        \item $V$: 时空网络中所有节点的集合, $V = \bigcup_{j \in J} V_j$ 。
+        \item $p_e$: 列车使用弧 $e$ 所产生的“利润” 。
+        \item $\sigma, \tau$: 分别表示时空网络中的虚拟始发节点和虚拟终点节点 。
+        \item $\delta_j^+(v)$: 对于列车 $j$，从节点 $v$ 出发的弧的集合 。
+        \item $\delta_j^-(v)$: 对于列车 $j$，进入节点 $v$ 的弧的集合 。
+        \item $T(v)$: 可能通过节点 $v$ 的所有列车的集合 。
+        \item $N(v)$: 与节点 $v$ 相冲突的节点集合（包括 $v$ 本身）。这些节点不能同时被占用 。
+    \end{itemize}
+
+    \subsection*{约束条件}
+    \begin{enumerate}
+        \item \textbf{列车路径的始发约束}:
+        每列车 $j$ 最多只能选择一条从虚拟始发节点 $\sigma$ 出发的弧。这表示每列车最多只能开始其行程一次。
+        \begin{equation}
+            \sum_{e \in \delta_j^+(\sigma)} x_e \le 1, \quad \forall j \in J\label{eq:con_start}
+        \end{equation}
+
+        \item \textbf{流量守恒约束}:
+        对于每列车 $j$ 和每个非虚拟始发/终点节点 $v$，进入该节点的被选中的弧的数量必须等于从该节点出发的被选中的弧的数量。这确保了列车路径的连续性。
+        \begin{equation}
+            \sum_{e \in \delta_j^-(v)} x_e = \sum_{e \in \delta_j^+(v)} x_e, \quad \forall j \in J, \forall v \in V \setminus \{\sigma, \tau\}\label{eq:con_flow}
+        \end{equation}
+
+        \item \textbf{列车路径的终止约束}:
+        每列车 $j$ 最多只能选择一条进入虚拟终点节点 $\tau$ 的弧。这表示每列车最多只能结束其行程一次 。
+        \begin{equation}
+            \sum_{e \in \delta_j^-(\tau)} x_e \le 1, \quad \forall j \in J\label{eq:con_end}
+        \end{equation}
+
+        \item \textbf{节点占用逻辑约束}:
+        定义了节点 $v$ 是否被列车 $j$ 占用 ($z_{jv}$)。如果列车 $j$ 使用了任何一条进入节点 $v$ 的弧，则该节点被列车 $j$ 占用。
+        \begin{equation}
+            z_{jv} = \sum_{e \in \delta_j^-(v)} x_e, \quad \forall j \in J, \forall v \in V_j\label{eq:con_node_occupied}
+        \end{equation}
+
+        \item \textbf{节点总体占用逻辑约束}:
+        定义了节点 $v$ 是否被任何列车占用 ($y_v$)。如果至少有一列车占用了节点 $v$，则 $y_v=1$。
+        \begin{equation}
+            y_v = \sum_{j \in T(v)} z_{jv}, \quad \forall v \in V_j\label{eq:con_node_occupied_total}
+        \end{equation}
+
+        \item \textbf{Headway (最小间隔) 约束}:
+        对于网络中的任何节点 $v$，其冲突集合 $N(v)$ 中的所有节点（这些节点代表了在时间或空间上不能同时占用的状态），最多只能有一个被占用。这是为了避免列车冲突，保证运行安全。
+        \begin{equation}
+            \sum_{v' \in N(v)} y_{v'} \le 1, \quad \forall v \in V\label{eq:con_headway}
+        \end{equation}
+
+        \item \textbf{二元变量约束}:
+        所有决策变量 $x_e$ 都必须是0或1。
+        \begin{equation}
+            x_e \in \{0,1\}, \quad \forall e \in E\label{eq:con_binary}
+        \end{equation}
+    \end{enumerate}
+
+
+\end{document}
