@@ -291,7 +291,7 @@
     \subsection{拉格朗日松弛算法 (Lagrangian Relaxation Solver)}
     拉格朗日松弛算法是一种用于求解整数规划问题的近似方法，特别适用于具有复杂约束的调度问题。该方法通过将某些约束引入目标函数中，并使用拉格朗日乘子来调整这些约束的影响，从而简化问题求解。
     本次作业基于拉格朗日松弛框架，主要针对时空网络模型中的 headway 约束(式 \ref{eq:con_headway})
-    进行松弛，算法伪代码如\ref{alg:lagrangian_relaxation}所示，以下为具体实现细节：
+    进行松弛，算法伪代码如\ref{alg:lagrangian_relaxation}所示，以下为具体实现细节：\\
 
     \begin{algorithm}[h]
         \caption{Lagrangian Relaxation Solver}
@@ -325,45 +325,28 @@
         \end{algorithmic}\label{alg:lagrangian_relaxation}
     \end{algorithm}
 
-    \begin{itemize}
-        \item \textbf{松弛问题}: Headway 约束 $\sum_{v' \in N(v)} y_{v'} \le 1$
-        被引入目标函数中，带有拉格朗日乘子 $\lambda_q$
-        (代码中为 \texttt{lambdas}，其中 $q$ 代表一个 headway
-        约束窗口，由节点类型、站点索引和锚定时间定义)。松弛后的目标函数变为 $\max
-        \sum_{j \in J} \sum_{e \in E_j} p_e x_e - \sum_q \lambda_q
-        (\sum_{v' \in N(q)} y_{v'} - 1)$。
-        \item \textbf{子问题求解}:
-        \begin{itemize}
-            \item 对于每个列车 $j$，原问题分解为一个最长路径问题（利润最大化）。
-            \item 弧的利润根据原始利润 $p_e$ 和由 $\lambda_q$
-            导出的惩罚项进行调整。具体来说，如果选择的弧 $e=(u,v)$ 的终点节点 $v_n$ (若为物理节点)
-            位于一个或多个 headway 窗口内，其利润会减去相应的 $\sum \lambda_q$。
-            \item 使用动态规划算法 在列车各自的时空网络上求解此路径问题。
-        \end{itemize}
-        \item \textbf{拉格朗日乘子更新}:
-        \begin{itemize}
-            \item 乘子 $\lambda_q$ 根据次梯度法进行更新： $\lambda_q^{k+1} =
-            \max(0, \lambda_q^k + \eta \cdot (\sum_{v' \in N(q)}
-            y_{v'}^{k} - 1))$，其中 $\eta$ 是步长 (\texttt{eta})，$\sum
-            y_{v'}^{k}$ 是在第 $k$ 次迭代的子问题解中，所有列车共同导致 headway 约束 $q$
-            的冲突节点总占用数。
-        \end{itemize}
-        \item \textbf{启发式方法构造可行解}:
-        \begin{itemize}
-            \item 由于拉格朗日松弛的解可能不满足被松弛的 headway 约束，因此采用启发式方法构造可行解。
-            \item 列车根据其在对偶子问题中的目标值（包含乘子惩罚的路径利润）进行降序排序。
-            \item 依次为每列车寻找一条路径，该路径不与已调度列车的路径发生 headway
-            冲突。此步骤也通过求解（不含惩罚项的原始利润的）最长路径问题完成，但在构建图时会移除与已选路径冲突的弧（即，如果一个节点
-            $v'$ 因选择后会导致与已占用节点冲突，则不考虑指向 $v'$ 的弧）。
-        \end{itemize}
-        \item \textbf{界更新与终止}:
-        \begin{itemize}
-            \item 拉格朗日对偶问题的解（所有列车子问题对偶利润之和加上 $\sum \lambda_q (1 -
-            \text{violation})$ 项）提供原始问题最优解的一个上界 (UB) (对于最大化问题)。
-            \item 原始启发式得到的最好可行解的目标值作为下界 (LB)。
-            \item 算法在达到最大迭代次数、UB-LB 间隙足够小或 $\eta$ 过小时终止。
-        \end{itemize}
-    \end{itemize}
+    \textbf{构造松弛问题}:
+    Headway 约束 $\sum_{v' \in N(v)} y_{v'} \le 1$
+    被引入目标函数中，带有拉格朗日乘子 $\lambda_q$。松弛后的目标函数变为 $\max
+    \sum_{j \in J} \sum_{e \in E_j} p_e x_e - \sum_q \lambda_q
+    (\sum_{v' \in N(q)} y_{v'} - 1)$。\\
+    \textbf{子问题求解}:
+    对于每个列车 $j$，原问题可以视作为一个最长路径问题（利润最大化）并使用动态规划求解。 弧的利润根据原始利润 $p_e$ 和由 $\lambda_q$导出的惩罚项进行调整。即如果选择的弧 $e=(u,v)$ 的终点节点 $v_n$ (若为物理节点)
+    位于一个或多个 headway 窗口内，其利润会减去相应的 $\sum \lambda_q$。\\
+    \textbf{拉格朗日乘子更新}:
+    乘子 $\lambda_q$ 根据次梯度法进行更新： $\lambda_q^{k+1} =
+    \max(0, \lambda_q^k + \eta \cdot (\sum_{v' \in N(q)}
+    y_{v'}^{k} - 1))$，其中 $\eta$ 是步长 (\texttt{eta})，$\sum
+    y_{v'}^{k}$ 是在第 $k$ 次迭代的子问题解中，所有列车共同导致 headway 约束 $q$
+    的冲突节点总占用数。\\
+
+    \textbf{启发式方法构造可行解}:
+    由于拉格朗日松弛的解可能不满足被松弛的 headway 约束，因此采用启发式方法构造可行解。将列车按其在对偶子问题中的目标值（包含乘子惩罚的路径利润）进行降序排序，
+    依次为每列车寻找一条路径，该路径不与已调度列车的路径发生 headway 冲突。此步骤也通过求解（不含惩罚项的原始利润的）最长路径问题完成，但在构建图时会移除与已选路径冲突的弧（即，如果一个节点
+    $v'$ 因选择后会导致与已占用节点冲突，则不考虑指向 $v'$ 的弧）。\\
+    \textbf{界更新与停机判断}:
+    拉格朗日对偶问题的解提供了原始问题最优解的一个上界 (UB) ，启发式方法得到的最好可行解的目标值提供了下界 (LB)。
+    故算法在达到最大迭代次数或UB-LB 间隙足够小或 $\eta$ 过小时终止。
 
     \subsection{交替方向乘子法 (ADMM)}
     交替方向乘子法 (ADMM)
@@ -409,62 +392,37 @@
         \end{algorithmic}\label{alg:algorithm}
     \end{algorithm}
 
-    \begin{itemize}
-        \item \textbf{问题重述}:
-        \begin{itemize}
-            \item 引入辅助全局变量 $z_{global_{jv}}$，表示列车 $j$ 是否占用节点 $v$。
-            \item 目标是最大化（或最小化，取决于 $p_e$ 的定义） $\sum p_e x_e$。
-            \item 主要约束是 $z_{local_{jv}} = z_{global_{jv}}$，其中
-            $z_{local_{jv}}$ 是由 $x_e$ 导出的局部占用变量 (即如果列车 $j$ 的路径包含
-            $v$，则 $z_{local_{jv}}=1$)。
-            \item 将 Headway 约束应用于 $z_{global_{jv}}$。
-        \end{itemize}
-        \item \textbf{ADMM 迭代步骤}:
-        \begin{enumerate}
-            \item \textbf{x-update}:
-            \begin{itemize}
-                \item 对于给定的 $z_{global}$ 和对偶变量 $\mu$ (对应
-                $z_{local} - z_{global} = 0$ 的拉格朗日乘子)，求解关于
-                $x_e$ (以及隐式的 $z_{local}$) 的子问题。
-                \item 目标函数为 $\sum p_e x_e + \sum_{j,v} \mu_{jv}
-                (z_{local_{jv}} - z_{global_{jv}}) +
-                \frac{\rho}{2} \sum_{j,v} ||z_{local_{jv}} -
-                z_{global_{jv}}||_2^2$。在代码实现中，针对每个列车
-                $j$，求解一个最长路径问题。弧 $(u,v')$ 的有效利润被调整为 $p_e -
-                (\mu_{j,v'} + \frac{\rho}{2} (1 - 2
-                z_{global_{j,v'}}))$，如果 $v'$ 是物理节点。
-                \item 使用动态规划求解。
-                \item 此步骤得到新的 $x_e$ 和 $z_{local}$。
-            \end{itemize}
-            \item \textbf{z-update}:
-            \begin{itemize}
-                \item 对于给定的 $z_{local}$ 和 $\mu$，求解关于 $z_{global}$ 的子问题。
-                \item 目标是最小化 $\sum_{j,v} [-\mu_{jv}
-                z_{global_{jv}} + \frac{\rho}{2}
-                (z_{local_{jv}} - z_{global_{jv}})^2]$，同时满足
-                headway 约束 $\sum_{j} z_{global_{jv'}} \le 1$
-                对于任意冲突集合 $N(v)$ 中的 $v'$。
-                \item 此子问题进一步分解：对于每个 (station, type)
-                对，通过动态规划解决。首先计算每个 $(j,v)$ 对的成本 $d_{jv} =
-                -\mu_{jv} + \frac{\rho}{2} (1 - 2
-                z_{local_{jv}})$。然后对每个 $(s, type)$，找到一组时间点
-                $\{t_k\}$ 和对应的列车 $\{j_k^*\}$，使得
-                $z_{global_{j_k^*, (s,type,t_k)}}=1$ 且满足
-                headway，同时最小化 $\sum d_{j_k^*, (s,type,t_k)}$。
-            \end{itemize}
-            \item \textbf{$\mu$-update}:
-            \begin{itemize}
-                \item 更新对偶变量：$\mu_{jv}^{k+1} = \mu_{jv}^k + \rho
-                (z_{local_{jv}}^k - z_{global_{jv}}^k)$。
-            \end{itemize}
-        \end{enumerate}
-        \item \textbf{收敛与可行性}:
-        \begin{itemize}
-            \item 算法迭代直至原始残差 ($||z_{local} - z_{global}||_2$) 足够小且解可行，或达到最大迭代次数。
-            \item 最终解的可行性通过检查 $z_{global}$ 是否满足所有列车的路径约束和 headway 约束来验证。
-            \item 惩罚参数 $\rho$ 在迭代过程中动态调整 (本次实现中 $\rho$ 乘以1.01进行递增)。
-        \end{itemize}
-    \end{itemize}
+    \textbf{问题重述}:
+    为将时空网络模型中的列车路径选择和 headway 约束转化为 ADMM，我们引入辅助全局变量 $z_{global_{jv}}$，表示列车 $j$ 是否占用节点 $v$。求解目标转化为最大化 $\sum p_e x_e$。
+    转化后，主要约束是 $z_{local_{jv}} = z_{global_{jv}}$。其中，$z_{local_{jv}}$ 是由 $x_e$ 导出的局部占用变量 (即如果列车 $j$ 的路径包含$v$，则 $z_{local_{jv}}=1$)。 \\
+    \textbf{ADMM 迭代步骤}:
+    \begin{enumerate}
+        \item \textbf{x-update}:
+        对于给定的 $z_{global}$ 和对偶变量 $\mu$ (对应
+        $z_{local} - z_{global} = 0$ 的拉格朗日乘子)，求解关于
+        $x_e$ (以及隐式的 $z_{local}$) 的子问题。
+        目标函数为 $\min \sum p_e x_e + \sum_{j,v} \mu_{jv}
+        (z_{local_{jv}} - z_{global_{jv}}) +
+        \frac{\rho}{2} \sum_{j,v} ||z_{local_{jv}} -
+        z_{global_{jv}}||_2^2$。在实现中，针对每个列车
+        $j$，使用动态规划求解此最长路径问题。
+        \item \textbf{z-update}:
+        对于给定的 $z_{local}$ 和 $\mu$，求解关于 $z_{global}$ 的子问题。
+        目标函数为 $\min \sum_{j,v} [-\mu_{jv}
+        z_{global_{jv}} + \frac{\rho}{2}
+        (z_{local_{jv}} - z_{global_{jv}})^2]$，要求满足
+        headway 约束 $\sum_{j} z_{global_{jv'}} \le 1$
+        对于任意冲突集合 $N(v)$ 中的 $v'$。具体实现中，可以对此子问题进一步分解：对于每个 (station, type)
+        对，均通过动态规划解决。首先计算每个 $(j,v)$ 对的成本 $d_{jv} =-\mu_{jv} + \frac{\rho}{2} (1 - 2
+        z_{local_{jv}})$。然后对每个 $(s, type)$，找到一组时间点$\{t_k\}$ 和对应的列车 $\{j_k^*\}$，使得
+        $z_{global_{j_k^*, (s,type,t_k)}}=1$ 且满足 headway，同时最小化 $\sum d_{j_k^*, (s,type,t_k)}$。
+        \item \textbf{$\mu$-update}:
+        更新对偶变量：$\mu_{jv}^{k+1} = \mu_{jv}^k + \rho
+        (z_{local_{jv}}^k - z_{global_{jv}}^k)$。其中惩罚参数 $\rho$ 可在迭代过程中动态调整
+    \end{enumerate} \\
+    \textbf{停机标准与可行性}:
+    算法迭代直至原始残差 ($||z_{local} - z_{global}||_2$) 足够小且解可行，或达到最大迭代次数。
+    最终解的可行性通过检查 $z_{global}$ 是否满足所有列车的路径约束和 headway 约束来验证。
 
     \subsection{强化学习(RL)}
 
