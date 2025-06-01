@@ -1,6 +1,8 @@
-import rustworkx as rx
 from typing import Optional, Literal
 from collections import defaultdict
+
+import rustworkx as rx
+import matplotlib.pyplot as plt
 
 from base_solver import RailwayTimetablingSolver, ArcKey
 from data import NodeInfo, RuntimeKey, TrainData, BlockSectionTime, Node
@@ -23,6 +25,7 @@ class GraphBasedSolver(RailwayTimetablingSolver):
                          t_max, headway, min_stop_dwell, max_stop_dwell, pass_dwell)
 
         self.profit_setting = profit_setting
+        self.feassiability: list[float] = []
 
         # Pre-generate all possible arcs for each train
         self._train_potential_arcs_map: dict[str, list[tuple[Node, Node]]] = {}
@@ -175,3 +178,13 @@ class GraphBasedSolver(RailwayTimetablingSolver):
                 num_occupations_in_window += y_vx.get(node_in_window, 0)
             total_violation += max(0, num_occupations_in_window - 1)
         return total_violation
+
+    def plot_feassibility(self, filename: str = "feasibility.pdf"):
+        plt.clf()
+        plt.plot(self.feassiability, marker='o', linestyle='-', color='b')
+        plt.title('Feasibility Over Iterations')
+        plt.xlabel('Iteration')
+        plt.ylabel('Feasibility')
+        plt.grid()
+        plt.savefig(filename)
+        plt.close()

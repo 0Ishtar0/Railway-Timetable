@@ -116,7 +116,7 @@ class LagrangianRelaxationSolver(GraphBasedSolver):
 
     def _primal_heuristic(self,
                           train_subproblem_results: list[tuple[str,
-                          list[ArcKey], float, float, set[NodeInfo]]]
+                                                               list[ArcKey], float, float, set[NodeInfo]]]
                           ) -> tuple[dict[ArcKey, float], float, set[NodeInfo]]:
         sorted_trains_data = sorted(train_subproblem_results, key=lambda x: x[3], reverse=True)
 
@@ -209,7 +209,7 @@ class LagrangianRelaxationSolver(GraphBasedSolver):
 
             current_L_val_sum_spp_duals = 0.0
             subproblem_results_this_iter: list[tuple[str,
-            list[ArcKey], float, float, set[NodeInfo]]] = []
+                                                     list[ArcKey], float, float, set[NodeInfo]]] = []
             all_nodes_occupied_in_subproblems: set[NodeInfo] = set()
 
             for train_id in self.train_ids:
@@ -238,11 +238,11 @@ class LagrangianRelaxationSolver(GraphBasedSolver):
                 print(
                     f"Iter {k_iter:3d}: LB={lower_bound:8.2f}, UB={upper_bound:8.2f}, Eta={eta:.5f}, Time={iter_time:5.2f}s")
 
+            feas = self._calculate_feasibility_metric(best_feasible_solution_arcs)
+            self.feassiability.append(feas)
             if lower_bound > float('-inf') and upper_bound < float('inf'):
                 if upper_bound - lower_bound <= 0.1 * abs(upper_bound):
-                    final_feas_check = self._calculate_feasibility_metric(
-                        best_feasible_solution_arcs)
-                    if final_feas_check == 0:
+                    if feas == 0:
                         if self.verbose:
                             print("Stopping: UB-LB tolerance met with feasible solution.")
                         break
@@ -302,3 +302,4 @@ if __name__ == "__main__":
     )
     lr_solution = lr_solver.solve()
     lr_solver.plot_timetable(lr_solution)
+    lr_solver.plot_feassibility()
