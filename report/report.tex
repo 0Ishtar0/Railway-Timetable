@@ -1,57 +1,35 @@
 \documentclass{article}
-\usepackage{CJKutf8}
 
-
-% if you need to pass options to natbib, use, e.g.:
-%     \PassOptionsToPackage{numbers, compress}{natbib}
-% before loading neurips_2022
-
-
-% ready for submission
-
-
-% to compile a preprint version, e.g., for submission to arXiv, add add the
-% [preprint] option:
-%     \usepackage[preprint]{neurips_2022}
-
-
-% to compile a camera-ready version, add the [final] option, e.g.:
 \usepackage[final]{neurips_2022}
-\usepackage{ctex}
+\usepackage[UTF8, fontset=adobe]{ctex}
 
-
-\usepackage[utf8]{inputenc} % allow utf-8 input
-\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
-\usepackage{hyperref}       % hyperlinks
-\usepackage{url}            % simple URM typesetting
-\usepackage{booktabs}       % professional-quality tables
-\usepackage{amsfonts}       % blackboard math symbols
-\usepackage{nicefrac}       % compact symbols for 1/2, etc.
-\usepackage{float} % 用来修正浮动对象的位置
-\usepackage{amsmath} % 数学公式支持
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
+\usepackage{float}
+\usepackage{amsmath}
 \usepackage{algorithm}
-\usepackage{algpseudocode} % 算法伪代码
-\usepackage{microtype}      % microtypography
-\usepackage{xcolor}         % colors
-\usepackage{bm}             % bold math symbols
-\usepackage{graphicx}       % include graphics
+\usepackage{algpseudocode}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{bm}
+\usepackage{graphicx}
 \usepackage{subfigure}
 \usepackage{listings}
+
+\hypersetup{
+    colorlinks=true,
+    linkbordercolor=white,
+}
 
 \renewcommand{\algorithmicrequire}{\textbf{Input:}}
 \renewcommand{\algorithmicensure}{\textbf{Output:}}
 
 \title{大数据分析中的算法期末上机报告}
-
-
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to MaTeX to determine where to break the
-% lines. Using \AND forces a line break at that point. So, if MaTeX puts 3 of 4
-% authors names on the first line, and the last on the second line, try using
-% \AND instead of \And before the third author name.
-
 
 \author{%
     \large 陈润璘 \\
@@ -61,90 +39,352 @@
     \large \texttt{2200010626}
 }
 
-
 \begin{document}
 
+\maketitle
 
-    \maketitle
+\section{问题描述}
 
+\subsection{时空网络模型}
 
-    \section{问题描述}
+铁路列车时刻表问题的时空网络模型旨在通过一个0-1整数规划模型来确定一个无冲突的列车运行计划。该模型基于时空网络构建，目标是最大化某种意义上的“利润”。
+\subsubsection{目标函数}
+模型的目标是最大化所有调度列车在各自路径上所选弧（路段或车站停驻）的“利润”之和：
+\begin{equation}
+    \max \sum_{j \in J} \sum_{e \in E_j} p_e x_e\label{eq:obj}
+\end{equation}
+其中，$p_e$ 是使用弧 $e$
+的“利润”值。在实现中，“利润”可以有多种实际含义，例如：若将始发弧的利润设为1，其他为0，则目标是最大化运行的列车数量；若将$p_e$设为路段运行时间的相反数，则目标是最小化总运行时间。
 
-    \subsection*{问题背景}
-    铁路列车时刻表问题旨在通过一个0-1整数规划模型来确定一个无冲突的列车运行计划。该模型基于时空网络构建，目标是最大化某种意义上的“利润”。
-    \subsection*{目标函数}
-    模型的目标是最大化所有调度列车在各自路径上所选弧（路段或车站停驻）的“利润”之和：
-    \begin{equation}
-        \max \sum_{j \in J} \sum_{e \in E_j} p_e x_e\label{eq:obj}
-    \end{equation}
-    其中，$p_e$ 是使用弧 $e$ 的“利润”值。在实现中，“利润”可以有多种实际含义，例如：若将始发弧的利润设为1，其他为0，则目标是最大化运行的列车数量；若将$p_e$设为路段运行时间的相反数，则目标是最小化总运行时间。
+\subsubsection{决策变量}
+\begin{itemize}
+    \item $x_e \in \{0,1\}$: 二元决策变量。如果弧 $e \in E$ 被某列车占用，则 $x_e = 1$；否则为 $0$。
+    \item $z_{jv}$: 辅助二元变量。如果节点 $v \in V_j$ 被列车 $j \in J$ 占用，则
+        $z_{jv} = 1$；否则为 $0$。
+    \item $y_v$: 辅助二元变量。如果节点 $v \in V_j$ 被任何列车占用，则 $y_v = 1$；否则为 $0$。
+\end{itemize}
 
-    \subsection*{决策变量}
-    \begin{itemize}
-        \item $x_e \in \{0,1\}$: 二元决策变量。如果弧 $e \in E$ 被某列车占用，则 $x_e = 1$；否则为 $0$ 。
-        \item $z_{jv}$: 辅助二元变量。如果节点 $v \in V_j$ 被列车 $j \in J$ 占用，则 $z_{jv} = 1$；否则为 $0$ 。它由 $x_e$ 导出。
-        \item $y_v$: 辅助二元变量。如果节点 $v \in V_j$ 被任何列车占用，则 $y_v = 1$；否则为 $0$ 。它由 $z_{jv}$ 导出。
-    \end{itemize}
+\subsubsection{模型参数}
+\begin{itemize}
+    \item $J$: 所有列车的集合 。
+    \item $E_j$: 列车 $j$ 在时空网络中可使用的弧（arc）的集合。
+    \item $E$: 时空网络中所有弧的集合, $E = \bigcup_{j \in J} E_j$ 。
+    \item $V_j$: 列车 $j$ 在时空网络中可访问的节点（node）的集合 。
+    \item $V$: 时空网络中所有节点的集合, $V = \bigcup_{j \in J} V_j$ 。
+    \item $p_e$: 列车使用弧 $e$ 所产生的“利润” 。
+    \item $\sigma, \tau$: 分别表示时空网络中的虚拟始发节点和虚拟终点节点 。
+    \item $\delta_j^+(v)$: 对于列车 $j$，从节点 $v$ 出发的弧的集合 。
+    \item $\delta_j^-(v)$: 对于列车 $j$，进入节点 $v$ 的弧的集合 。
+    \item $T(v)$: 可能通过节点 $v$ 的所有列车的集合 。
+    \item $N(v)$: 与节点 $v$ 相冲突的节点集合（包括 $v$ 本身）。这些节点不能同时被占用 。
+\end{itemize}
 
-    \subsection*{模型参数}
-    \begin{itemize}
-        \item $J$: 所有列车的集合 。
-        \item $E_j$: 列车 $j$ 在时空网络中可使用的弧（arc）的集合。
-        \item $E$: 时空网络中所有弧的集合, $E = \bigcup_{j \in J} E_j$ 。
-        \item $V_j$: 列车 $j$ 在时空网络中可访问的节点（node）的集合 。
-        \item $V$: 时空网络中所有节点的集合, $V = \bigcup_{j \in J} V_j$ 。
-        \item $p_e$: 列车使用弧 $e$ 所产生的“利润” 。
-        \item $\sigma, \tau$: 分别表示时空网络中的虚拟始发节点和虚拟终点节点 。
-        \item $\delta_j^+(v)$: 对于列车 $j$，从节点 $v$ 出发的弧的集合 。
-        \item $\delta_j^-(v)$: 对于列车 $j$，进入节点 $v$ 的弧的集合 。
-        \item $T(v)$: 可能通过节点 $v$ 的所有列车的集合 。
-        \item $N(v)$: 与节点 $v$ 相冲突的节点集合（包括 $v$ 本身）。这些节点不能同时被占用 。
-    \end{itemize}
-
-    \subsection*{约束条件}
-    \begin{enumerate}
-        \item \textbf{列车路径的始发约束}:
+\subsubsection{约束条件}
+\begin{enumerate}
+    \item \textbf{列车路径的始发约束}:
         每列车 $j$ 最多只能选择一条从虚拟始发节点 $\sigma$ 出发的弧。这表示每列车最多只能开始其行程一次。
         \begin{equation}
-            \sum_{e \in \delta_j^+(\sigma)} x_e \le 1, \quad \forall j \in J\label{eq:con_start}
+            \sum_{e \in \delta_j^+(\sigma)} x_e \le 1, \quad \forall
+            j \in J\label{eq:con_start}
         \end{equation}
 
-        \item \textbf{流量守恒约束}:
-        对于每列车 $j$ 和每个非虚拟始发/终点节点 $v$，进入该节点的被选中的弧的数量必须等于从该节点出发的被选中的弧的数量。这确保了列车路径的连续性。
+    \item \textbf{流量守恒约束}:
+        对于每列车 $j$ 和每个非虚拟始发/终点节点
+        $v$，进入该节点的被选中的弧的数量必须等于从该节点出发的被选中的弧的数量。这确保了列车路径的连续性。
         \begin{equation}
-            \sum_{e \in \delta_j^-(v)} x_e = \sum_{e \in \delta_j^+(v)} x_e, \quad \forall j \in J, \forall v \in V \setminus \{\sigma, \tau\}\label{eq:con_flow}
+            \sum_{e \in \delta_j^-(v)} x_e = \sum_{e \in
+            \delta_j^+(v)} x_e, \quad \forall j \in J, \forall v \in
+            V \setminus \{\sigma, \tau\}\label{eq:con_flow}
         \end{equation}
 
-        \item \textbf{列车路径的终止约束}:
+    \item \textbf{列车路径的终止约束}:
         每列车 $j$ 最多只能选择一条进入虚拟终点节点 $\tau$ 的弧。这表示每列车最多只能结束其行程一次 。
         \begin{equation}
-            \sum_{e \in \delta_j^-(\tau)} x_e \le 1, \quad \forall j \in J\label{eq:con_end}
+            \sum_{e \in \delta_j^-(\tau)} x_e \le 1, \quad \forall j
+            \in J\label{eq:con_end}
         \end{equation}
 
-        \item \textbf{节点占用逻辑约束}:
-        定义了节点 $v$ 是否被列车 $j$ 占用 ($z_{jv}$)。如果列车 $j$ 使用了任何一条进入节点 $v$ 的弧，则该节点被列车 $j$ 占用。
+    \item \textbf{节点占用逻辑约束}:
+        定义了节点 $v$ 是否被列车 $j$ 占用 ($z_{jv}$)。如果列车 $j$ 使用了任何一条进入节点 $v$
+        的弧，则该节点被列车 $j$ 占用。
         \begin{equation}
-            z_{jv} = \sum_{e \in \delta_j^-(v)} x_e, \quad \forall j \in J, \forall v \in V_j\label{eq:con_node_occupied}
+            z_{jv} = \sum_{e \in \delta_j^-(v)} x_e, \quad \forall j
+            \in J, \forall v \in V_j\label{eq:con_node_occupied}
         \end{equation}
 
-        \item \textbf{节点总体占用逻辑约束}:
+    \item \textbf{节点总体占用逻辑约束}:
         定义了节点 $v$ 是否被任何列车占用 ($y_v$)。如果至少有一列车占用了节点 $v$，则 $y_v=1$。
         \begin{equation}
-            y_v = \sum_{j \in T(v)} z_{jv}, \quad \forall v \in V_j\label{eq:con_node_occupied_total}
+            y_v = \sum_{j \in T(v)} z_{jv}, \quad \forall v \in
+            V_j\label{eq:con_node_occupied_total}
         \end{equation}
 
-        \item \textbf{Headway (最小间隔) 约束}:
-        对于网络中的任何节点 $v$，其冲突集合 $N(v)$ 中的所有节点（这些节点代表了在时间或空间上不能同时占用的状态），最多只能有一个被占用。这是为了避免列车冲突，保证运行安全。
+    \item \textbf{Headway (最小间隔) 约束}:
+        对于网络中的任何节点 $v$，其冲突集合 $N(v)$
+        中的所有节点（这些节点代表了在时间或空间上不能同时占用的状态），最多只能有一个被占用。这是为了避免列车冲突，保证运行安全。
         \begin{equation}
-            \sum_{v' \in N(v)} y_{v'} \le 1, \quad \forall v \in V\label{eq:con_headway}
+            \sum_{v' \in N(v)} y_{v'} \le 1, \quad \forall v \in
+            V\label{eq:con_headway}
         \end{equation}
 
-        \item \textbf{二元变量约束}:
+    \item \textbf{二元变量约束}:
         所有决策变量 $x_e$ 都必须是0或1。
         \begin{equation}
             x_e \in \{0,1\}, \quad \forall e \in E\label{eq:con_binary}
         \end{equation}
-    \end{enumerate}
+\end{enumerate}
 
+\subsection{Job-Shop调度模型}
+
+% TODO: Add job-shop model description
+
+\section{算法描述}
+\label{sec:algo_desc}
+本次作业实现了多种算法来求解铁路列车时刻表问题。
+
+\subsection{基于 Gurobi 的时空网络模型求解器}
+该求解器 (\texttt{gurobi\_solver.py}) 直接实现了第1节中描述的0-1整数规划模型。它利用 Gurobi 优化软件包来寻找精确解。
+
+\begin{itemize}
+    \item \textbf{模型构建}:
+        \begin{itemize}
+            \item \textbf{决策变量}: 主要决策变量 $x_e$ 表示弧 $e$ 是否被列车占用。辅助变量
+                $z_{jv}$ 表示节点 $v$ 是否被列车 $j$ 占用，以及 $y_v$
+                表示节点 $v$ 是否被任何列车占用。这些变量对应于问题描述中的
+                $x_e$, $z_{jv}$, 和 $y_v$ （式
+                \ref{eq:con_node_occupied} 和 \ref{eq:con_node_occupied_total}）。
+            \item \textbf{弧的生成}:
+                为每列车生成所有可能的始发弧、车站弧（考虑停站时间和通过时间）、运行段弧和终止弧，构建时空网络。
+            \item \textbf{约束条件}:
+                \begin{itemize}
+                    \item 路径始发与终止约束 (对应式 \ref{eq:con_start} 和
+                        \ref{eq:con_end})。
+                    \item 流量守恒约束 (对应式 \ref{eq:con_flow})。
+                    \item 节点占用逻辑约束 ($z_{jv}$ 和 $y_v$ 的定义，对应式
+                            \ref{eq:con_node_occupied} 和
+                        \ref{eq:con_node_occupied_total})。
+                    \item Headway 最小间隔约束 (对应式 \ref{eq:con_headway})。
+                \end{itemize}
+            \item \textbf{目标函数}: 根据用户选择（最小化最大完工时间
+                \texttt{min\_makespan}，最小化总到达时间
+                \texttt{min\_sum\_arrival}，或可行性
+                \texttt{feasibility}），构建相应的目标函数。这与式 \ref{eq:obj}
+                的通用形式一致，通过设置不同的 $p_e$ 实现。
+        \end{itemize}
+    \item \textbf{求解}: 调用 Gurobi 的 \texttt{optimize()} 方法求解构建的整数规划模型。
+    \item \textbf{LP松弛 (\texttt{RelaxGurobiSolver})}: 提供了一个变体
+        (\texttt{RelaxGurobiSolver})，将二元变量松弛为连续变量 ($0 \le x_e \le
+        1$)，用于求解问题的线性规划松弛。
+\end{itemize}
+
+\subsection{Job-Shop调度模型求解器 (Job Shop Solver)}
+此方法将列车时刻表问题重新表述为一个 Job-Shop 调度问题。
+
+\begin{itemize}
+    \item \textbf{决策变量}:
+        \begin{itemize}
+            \item $a_{j,s}$: 列车 $j$ 到达车站 $s$ 的时间 (连续变量)。
+            \item $d_{j,s}$: 列车 $j$ 从车站 $s$ 出发的时间 (连续变量)。
+            \item 引入了额外的二元变量来处理车序和 headway 约束，例如 $\delta_{arr}$ 和
+                $\delta_{dep}$
+                用于控制两列车在同一车站的到达/出发间隔，$\pi_{block\_order}$ 用于控制同一运行段上的车序。
+        \end{itemize}
+    \item \textbf{约束条件}:
+        \begin{itemize}
+            \item \textbf{运行时间约束}: $a_{j,s+1} = d_{j,s} +
+                \text{run\_time}_{j,s,s+1}$。
+            \item \textbf{停站时间约束}: 最小停站时间 $d_{j,s} \ge a_{j,s} +
+                \text{min\_stop\_dwell}$，最大停站时间 $d_{j,s} \le a_{j,s}
+                + \text{max\_stop\_dwell}$；对于通过的列车，$d_{j,s} = a_{j,s}
+                + \text{pass\_dwell}$。
+            \item \textbf{Headway 约束}:
+                使用大M方法和二元变量强制任意两列车在同一车站的到达和出发至少间隔 \texttt{headway} 时间。
+            \item \textbf{单线约束 (FIFO on blocks)}:
+                同样使用大M方法和二元变量确保在一个物理区间段内，列车的进入和离开顺序是一致的 (先入先出)。
+            \item \textbf{时间窗约束}: 所有到达和出发时间必须在 $T_{max}$ 之内。
+        \end{itemize}
+    \item \textbf{目标函数}: 支持最小化最大完工时间
+        (\texttt{min\_makespan})，最小化总到达时间
+        (\texttt{min\_sum\_arrival})，或仅求解可行性 (\texttt{feasibility})。
+    \item \textbf{求解}: 使用 Gurobi 求解此混合整数规划 (MIP) 模型。
+\end{itemize}
+
+\subsection{拉格朗日松弛算法 (Lagrangian Relaxation Solver)}
+该算法 (\texttt{lagrange\_solver.py}) 基于拉格朗日松弛框架，主要针对时空网络模型中的 headway 约束
+(式 \ref{eq:con_headway}) 进行松弛。
+
+\begin{algorithm}[H]
+    \caption{拉格朗日松弛算法主要流程}
+    \begin{algorithmic}[1]
+        \Require 问题数据 (时空网络, 列车信息, headway 定义)
+        \Ensure 近似最优且可行的列车路径集合 $X^*$
+        \State 初始化拉格朗日乘子 $\lambda_q \ge 0$ (针对 headway 约束 $q$)
+        \State 初始化步长 $\eta > 0$, 上下界 $LB, UB$, 最优可行解 $X^*$
+        \For{$k = 1 \dots K_{max}$ (最大迭代次数)}
+        \ForAll{列车 $j \in J$}
+        \State 根据当前 $\lambda$ 计算修正后的弧利润 $p'_e = p_e -
+        \text{penalty}(\lambda, e)$
+        \State 求解列车 $j$ 的最长路径问题得到路径 $X^k_j$ 及其对偶利润
+        \EndFor
+        \State 计算当前拉格朗日对偶函数值 $L_k(\lambda)$ (所有列车对偶利润之和 + $\sum \lambda_q$)
+        \State 更新上界 $UB = \min(UB, L_k(\lambda))$
+        \State 使用启发式方法 (如基于子问题解排序，逐个调度列车并避免冲突) 得到可行路径集 $X_{feas}$
+        和目标值 $Z_{feas}$
+        \If{$Z_{feas} > LB$}
+        \State 更新下界 $LB = Z_{feas}$
+        \State $X^* = X_{feas}$
+        \EndIf
+        \If{满足终止条件 (如 $UB-LB$ 足够小且 $X^*$ 可行)}
+        \State \textbf{break}
+        \EndIf
+        \State 计算 headway 约束的违反度 $g_q$
+        \State $\lambda_q \gets \max(0, \lambda_q + \eta \cdot g_q)$
+        \State 更新步长 $\eta$
+        \EndFor
+        \State \Return 最优可行解 $X^*$
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{itemize}
+    \item \textbf{松弛问题}: Headway 约束 $\sum_{v' \in N(v)} y_{v'} \le 1$
+        被引入目标函数中，带有拉格朗日乘子 $\lambda_q$
+        (代码中为 \texttt{lambdas}，其中 $q$ 代表一个 headway
+        约束窗口，由节点类型、站点索引和锚定时间定义)。松弛后的目标函数变为 $\max
+        \sum_{j \in J} \sum_{e \in E_j} p_e x_e - \sum_q \lambda_q
+        (\sum_{v' \in N(q)} y_{v'} - 1)$。
+    \item \textbf{子问题求解 (\texttt{\_solve\_train\_subproblem\_spp})}:
+        \begin{itemize}
+            \item 对于每个列车 $j$，原问题分解为一个最长路径问题（利润最大化）。
+            \item 弧的利润根据原始利润 $p_e$ 和由 $\lambda_q$
+                导出的惩罚项进行调整。具体来说，如果选择的弧 $e=(u,v)$ 的终点节点 $v_n$ (若为物理节点)
+                位于一个或多个 headway 窗口内，其利润会减去相应的 $\sum \lambda_q$ (通过
+                \texttt{\_calculate\_lambda\_penalty\_for\_node} 计算)。
+            \item 使用动态规划算法 (\texttt{\_solve\_longest\_path\_dag\_dp})
+                在列车各自的时空网络上求解此路径问题。
+        \end{itemize}
+    \item \textbf{拉格朗日乘子更新}:
+        \begin{itemize}
+            \item 乘子 $\lambda_q$ 根据次梯度法进行更新： $\lambda_q^{k+1} =
+                \max(0, \lambda_q^k + \eta \cdot (\sum_{v' \in N(q)}
+                y_{v'}^{k} - 1))$，其中 $\eta$ 是步长 (\texttt{eta})，$\sum
+                y_{v'}^{k}$ 是在第 $k$ 次迭代的子问题解中，所有列车共同导致 headway 约束 $q$
+                的冲突节点总占用数。
+        \end{itemize}
+    \item \textbf{原始启发式 (\texttt{\_primal\_heuristic})}:
+        \begin{itemize}
+            \item 由于拉格朗日松弛的解可能不满足被松弛的 headway 约束，因此采用启发式方法构造可行解。
+            \item 列车根据其在对偶子问题中的目标值（包含乘子惩罚的路径利润）进行降序排序。
+            \item 依次为每列车寻找一条路径，该路径不与已调度列车的路径发生 headway
+                冲突。此步骤也通过求解（不含惩罚项的原始利润的）最长路径问题完成，但在构建图时会移除与已选路径冲突的弧（即，如果一个节点
+                $v'$ 因选择后会导致与已占用节点冲突，则不考虑指向 $v'$ 的弧）。
+        \end{itemize}
+    \item \textbf{界更新与终止}:
+        \begin{itemize}
+            \item 拉格朗日对偶问题的解（所有列车子问题对偶利润之和加上 $\sum \lambda_q (1 -
+                \text{violation})$ 项）提供原始问题最优解的一个上界 (UB) (对于最大化问题)。
+            \item 原始启发式得到的最好可行解的目标值作为下界 (LB)。
+            \item 算法在达到最大迭代次数、UB-LB 间隙足够小或 $\eta$ 过小时终止。
+        \end{itemize}
+\end{itemize}
+
+\subsection{交替方向乘子法 (ADMM)}
+ADMM 求解器也被用于解决该问题。它将问题分解为几个更易于处理的子问题，并通过引入辅助变量和增广拉格朗日函数来协调这些子问题的解。
+
+\begin{algorithm}[H]
+    \caption{ADMM算法主要流程}
+    \begin{algorithmic}[1]
+        \Require 问题数据 (时空网络, 列车信息, headway 定义)
+        \Ensure 近似最优且可行的列车路径集合 $X_{best}^*$
+        \State 初始化局部占用 $z_{local_{jv}}$, 全局占用 $z_{global_{jv}}$, 对偶变量 $\mu_{jv}$
+        \State 初始化惩罚参数 $\rho > 0$
+        \State $X_{best}^* \gets \emptyset$,
+        $\text{best\_feasibility} \gets \infty$,
+        $\text{best\_objective} \gets -\infty$
+        \For{$k = 1 \dots K_{max}$ (最大迭代次数)}
+        \State \Comment{1. x-update (更新列车路径 $X^{k+1}$ 和局部占用 $z_{local}^{k+1}$)}
+        \ForAll{列车 $j \in J$}
+        \State 根据 $p_e, \mu^k, z_{global}^k, \rho$ 计算修正的弧利润
+        \State 求解列车 $j$ 的最长路径问题，得到 $X_j^{k+1}$ 和对应的 $z_{local,j}^{k+1}$
+        \EndFor
+        \State 合并得到 $X^{k+1}$ 和 $z_{local}^{k+1}$
+        \State \Comment{2. z-update (更新全局占用 $z_{global}^{k+1}$)}
+        \State 对于每个 (车站, 类型) 对:
+        \State \quad 根据 $\mu^k, z_{local}^{k+1}, \rho$ 计算节点占用成本
+        \State \quad 使用动态规划求解，选择一组满足 headway 约束的 $(v_t, j^*_{v_t})$
+        来确定 $z_{global}^{k+1}$
+        \State \Comment{3. $\mu$-update (更新对偶变量 $\mu^{k+1}$)}
+        \State $\mu_{jv}^{k+1} \gets \mu_{jv}^k + \rho
+        (z_{local,jv}^{k+1} - z_{global,jv}^{k+1})$
+        \State (可选) 更新惩罚参数 $\rho$
+        \State 评估当前解 $X^{k+1}$ 的目标值和可行性
+        \If{当前解优于 $X_{best}^*$}
+        \State 更新 $X_{best}^*$, $\text{best\_feasibility}$,
+        $\text{best\_objective}$
+        \EndIf
+        \If{满足终止条件 (如残差足够小或达到最大迭代次数)}
+        \State \textbf{break}
+        \EndIf
+        \EndFor
+        \State \Return $X_{best}^*$
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{itemize}
+    \item \textbf{问题重述}:
+        \begin{itemize}
+            \item 引入辅助全局变量 $z_{global_{jv}}$，表示列车 $j$ 是否占用节点 $v$。
+            \item 目标是最大化（或最小化，取决于 $p_e$ 的定义） $\sum p_e x_e$。
+            \item 主要约束是 $z_{local_{jv}} = z_{global_{jv}}$，其中
+                $z_{local_{jv}}$ 是由 $x_e$ 导出的局部占用变量 (即如果列车 $j$ 的路径包含
+                $v$，则 $z_{local_{jv}}=1$)。
+            \item Headway 约束应用于 $z_{global_{jv}}$。
+        \end{itemize}
+    \item \textbf{ADMM 迭代步骤}:
+        \begin{enumerate}
+            \item \textbf{x-update}:
+                \begin{itemize}
+                    \item 对于给定的 $z_{global}$ 和对偶变量 $\mu$ (对应
+                        $z_{local} - z_{global} = 0$ 的拉格朗日乘子)，求解关于
+                        $x_e$ (以及隐式的 $z_{local}$) 的子问题。
+                    \item 目标函数为 $\sum p_e x_e + \sum_{j,v} \mu_{jv}
+                        (z_{local_{jv}} - z_{global_{jv}}) +
+                        \frac{\rho}{2} \sum_{j,v} ||z_{local_{jv}} -
+                        z_{global_{jv}}||_2^2$。在代码实现中，针对每个列车
+                        $j$，求解一个最长路径问题。弧 $(u,v')$ 的有效利润被调整为 $p_e -
+                        (\mu_{j,v'} + \frac{\rho}{2} (1 - 2
+                        z_{global_{j,v'}}))$，如果 $v'$ 是物理节点。
+                    \item 同样使用 \texttt{\_solve\_longest\_path\_dag\_dp} 求解。
+                    \item 此步骤得到新的 $x_e$ 和 $z_{local}$。
+                \end{itemize}
+            \item \textbf{z-update}:
+                \begin{itemize}
+                    \item 对于给定的 $z_{local}$ 和 $\mu$，求解关于 $z_{global}$ 的子问题。
+                    \item 目标是最小化 $\sum_{j,v} [-\mu_{jv}
+                            z_{global_{jv}} + \frac{\rho}{2}
+                        (z_{local_{jv}} - z_{global_{jv}})^2]$，同时满足
+                        headway 约束 $\sum_{j} z_{global_{jv'}} \le 1$
+                        对于任意冲突集合 $N(v)$ 中的 $v'$。
+                    \item 此子问题进一步分解：对于每个 (station, type)
+                        对，通过动态规划解决。首先计算每个 $(j,v)$ 对的成本 $d_{jv} =
+                        -\mu_{jv} + \frac{\rho}{2} (1 - 2
+                        z_{local_{jv}})$。然后对每个 $(s, type)$，找到一组时间点
+                        $\{t_k\}$ 和对应的列车 $\{j_k^*\}$，使得
+                        $z_{global_{j_k^*, (s,type,t_k)}}=1$ 且满足
+                        headway，同时最小化 $\sum d_{j_k^*, (s,type,t_k)}$。
+                \end{itemize}
+            \item \textbf{$\mu$-update}:
+                \begin{itemize}
+                    \item 更新对偶变量：$\mu_{jv}^{k+1} = \mu_{jv}^k + \rho
+                        (z_{local_{jv}}^k - z_{global_{jv}}^k)$。
+                \end{itemize}
+        \end{enumerate}
+    \item \textbf{收敛与可行性}:
+        \begin{itemize}
+            \item 算法迭代直至原始残差 ($||z_{local} - z_{global}||_2$) 足够小且解可行，或达到最大迭代次数。
+            \item 最终解的可行性通过 \texttt{\_calculate\_feasibility\_metric}
+                检查 headway 约束的违反程度。
+            \item 惩罚参数 $\rho$ 在迭代过程中可能会被调整 (例如，代码中 $\rho$ 乘以1.01进行递增)。
+        \end{itemize}
+\end{itemize}
 
 \end{document}

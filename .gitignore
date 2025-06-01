@@ -167,3 +167,12 @@ cython_debug/
 *.pdf
 *.ilp
 out/
+
+## Latex output
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.log
+*.synctex.gz
