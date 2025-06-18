@@ -115,8 +115,7 @@ class LagrangianRelaxationSolver(GraphBasedSolver):
         return final_path_arcs, total_original_profit_on_path, max_modified_profit, nodes_occupied_by_path
 
     def _primal_heuristic(self,
-                          train_subproblem_results: list[tuple[str,
-                                                               list[ArcKey], float, float, set[NodeInfo]]]
+                          train_subproblem_results: list[tuple[str, list[ArcKey], float, float, set[NodeInfo]]],
                           ) -> tuple[dict[ArcKey, float], float, set[NodeInfo]]:
         sorted_trains_data = sorted(train_subproblem_results, key=lambda x: x[3], reverse=True)
 
@@ -208,8 +207,7 @@ class LagrangianRelaxationSolver(GraphBasedSolver):
             iter_start_time = time.time()
 
             current_L_val_sum_spp_duals = 0.0
-            subproblem_results_this_iter: list[tuple[str,
-                                                     list[ArcKey], float, float, set[NodeInfo]]] = []
+            subproblem_results_this_iter: list[tuple[str, list[ArcKey], float, float, set[NodeInfo]]] = []
             all_nodes_occupied_in_subproblems: set[NodeInfo] = set()
 
             for train_id in self.train_ids:
@@ -295,8 +293,8 @@ if __name__ == "__main__":
         max_stop_dwell=15,
         pass_dwell=0,
         max_iterations=1000,
-        initial_eta=0.05,
-        eta_decay_factor=0.98,
+        initial_eta=1000,
+        eta_decay_factor=0.99,
         objective_type="max_trains",
         verbose=True
     )

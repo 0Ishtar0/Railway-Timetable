@@ -181,7 +181,7 @@ class GraphBasedSolver(RailwayTimetablingSolver):
 
     def plot_feassibility(self, filename: str = "feasibility.pdf"):
         plt.clf()
-        plt.plot(self.feassiability, marker='o', linestyle='-', color='b')
+        plt.plot(self.feassiability, linewidth=1)
         plt.title('Feasibility Over Iterations')
         plt.xlabel('Iteration')
         plt.ylabel('Feasibility')

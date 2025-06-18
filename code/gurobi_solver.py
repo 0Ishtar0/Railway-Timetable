@@ -254,7 +254,7 @@ if __name__ == "__main__":
         min_stop_dwell=2,
         max_stop_dwell=15,
         pass_dwell=0,
-        objective_type="min_makespan"  # Change to "min_sum_arrival" or "feasibility" as needed
+        objective_type="feasibility"
     )
     solution = solver.solve()
 

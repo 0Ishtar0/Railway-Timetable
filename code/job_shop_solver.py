@@ -51,7 +51,7 @@ class JobShopGurobiSolver(RailwayTimetablingSolver):
                     continue
 
                 self.model.addConstr(a[train_id, s_idx + 1] == d[train_id, s_idx] + run_time,
-                                     name=f"TravelTime_{train_id}_s{s_idx}_s{s_idx+1}")
+                                     name=f"TravelTime_{train_id}_s{s_idx}_s{s_idx + 1}")
 
         for train_id in self.train_ids:
             train_spec = self.train_specs_map[train_id]
@@ -84,35 +84,44 @@ class JobShopGurobiSolver(RailwayTimetablingSolver):
                         delta_arr[j1_id, j2_id, s_idx] = self.model.addVar(
                             vtype=GRB.BINARY, name=f"delta_arr_{j1_id}_{j2_id}_s{s_idx}")
                         # If delta_arr = 1, j1 before j2 (or at same time for this constraint logic, then headway applies)
-                        self.model.addConstr(a[j2_id, s_idx] >= a[j1_id, s_idx] + self.headway - M * (1 - delta_arr[j1_id, j2_id, s_idx]),
+                        self.model.addConstr(a[j2_id, s_idx] >= a[j1_id, s_idx] + self.headway - M * (
+                                1 - delta_arr[j1_id, j2_id, s_idx]),
                                              name=f"ArrHeadway1_{j1_id}_{j2_id}_s{s_idx}")
-                        self.model.addConstr(a[j1_id, s_idx] >= a[j2_id, s_idx] + self.headway - M * delta_arr[j1_id, j2_id, s_idx],
-                                             name=f"ArrHeadway2_{j1_id}_{j2_id}_s{s_idx}")
+                        self.model.addConstr(
+                            a[j1_id, s_idx] >= a[j2_id, s_idx] + self.headway - M * delta_arr[j1_id, j2_id, s_idx],
+                            name=f"ArrHeadway2_{j1_id}_{j2_id}_s{s_idx}")
 
                     # Departure Headway (not for destination s_idx = num_stations-1)
                     if s_idx < self.num_stations - 1:
                         delta_dep[j1_id, j2_id, s_idx] = self.model.addVar(
                             vtype=GRB.BINARY, name=f"delta_dep_{j1_id}_{j2_id}_s{s_idx}")
                         # If delta_dep = 1, j1 before j2
-                        self.model.addConstr(d[j2_id, s_idx] >= d[j1_id, s_idx] + self.headway - M * (1 - delta_dep[j1_id, j2_id, s_idx]),
+                        self.model.addConstr(d[j2_id, s_idx] >= d[j1_id, s_idx] + self.headway - M * (
+                                1 - delta_dep[j1_id, j2_id, s_idx]),
                                              name=f"DepHeadway1_{j1_id}_{j2_id}_s{s_idx}")
-                        self.model.addConstr(d[j1_id, s_idx] >= d[j2_id, s_idx] + self.headway - M * delta_dep[j1_id, j2_id, s_idx],
-                                             name=f"DepHeadway2_{j1_id}_{j2_id}_s{s_idx}")
+                        self.model.addConstr(
+                            d[j1_id, s_idx] >= d[j2_id, s_idx] + self.headway - M * delta_dep[j1_id, j2_id, s_idx],
+                            name=f"DepHeadway2_{j1_id}_{j2_id}_s{s_idx}")
 
                 for s_idx in range(self.num_stations - 1):  # For block (s_idx, s_idx+1)
                     pi_block_order[j1_id, j2_id, s_idx] = self.model.addVar(
                         vtype=GRB.BINARY, name=f"pi_order_{j1_id}_{j2_id}_s{s_idx}")
                     # If pi_block_order = 1, j1 departs s_idx for s_idx+1 before or at same time as j2
-                    self.model.addConstr(d[j1_id, s_idx] <= d[j2_id, s_idx] + M * (1 - pi_block_order[j1_id, j2_id, s_idx]),
-                                         name=f"FIFO_Dep1_Order_{j1_id}_{j2_id}_s{s_idx}")
-                    self.model.addConstr(a[j1_id, s_idx+1] <= a[j2_id, s_idx+1] + M * (1 - pi_block_order[j1_id, j2_id, s_idx]),
-                                         name=f"FIFO_Arr1_Order_{j1_id}_{j2_id}_s{s_idx}")
+                    self.model.addConstr(
+                        d[j1_id, s_idx] <= d[j2_id, s_idx] + M * (1 - pi_block_order[j1_id, j2_id, s_idx]),
+                        name=f"FIFO_Dep1_Order_{j1_id}_{j2_id}_s{s_idx}")
+                    self.model.addConstr(
+                        a[j1_id, s_idx + 1] <= a[j2_id, s_idx + 1] + M * (1 - pi_block_order[j1_id, j2_id, s_idx]),
+                        name=f"FIFO_Arr1_Order_{j1_id}_{j2_id}_s{s_idx}")
 
                     # If pi_block_order = 0, j2 departs s_idx for s_idx+1 before j1
-                    self.model.addConstr(d[j2_id, s_idx] <= d[j1_id, s_idx] - epsilon + M * pi_block_order[j1_id, j2_id, s_idx],  # Added -epsilon to enforce strict ordering for departure
-                                         name=f"FIFO_Dep2_Order_{j1_id}_{j2_id}_s{s_idx}")
-                    self.model.addConstr(a[j2_id, s_idx+1] <= a[j1_id, s_idx+1] + M * pi_block_order[j1_id, j2_id, s_idx],
-                                         name=f"FIFO_Arr2_Order_{j1_id}_{j2_id}_s{s_idx}")
+                    self.model.addConstr(
+                        d[j2_id, s_idx] <= d[j1_id, s_idx] - epsilon + M * pi_block_order[j1_id, j2_id, s_idx],
+                        # Added -epsilon to enforce strict ordering for departure
+                        name=f"FIFO_Dep2_Order_{j1_id}_{j2_id}_s{s_idx}")
+                    self.model.addConstr(
+                        a[j2_id, s_idx + 1] <= a[j1_id, s_idx + 1] + M * pi_block_order[j1_id, j2_id, s_idx],
+                        name=f"FIFO_Arr2_Order_{j1_id}_{j2_id}_s{s_idx}")
 
         for train_id in self.train_ids:
             # Arrival at destination within T_max
@@ -146,8 +155,8 @@ class JobShopGurobiSolver(RailwayTimetablingSolver):
         print(f"JobShop Model - Number of constraints: {self.model.NumConstrs}")
 
         if self.model.Status == GRB.OPTIMAL or \
-           (self.model.Status in [GRB.SUBOPTIMAL, GRB.INTERRUPTED] and self.model.SolCount > 0) or \
-           (self.model.Status not in [GRB.INF_OR_UNBD, GRB.INFEASIBLE, GRB.UNBOUNDED] and self.model.SolCount > 0):
+                (self.model.Status in [GRB.SUBOPTIMAL, GRB.INTERRUPTED] and self.model.SolCount > 0) or \
+                (self.model.Status not in [GRB.INF_OR_UNBD, GRB.INFEASIBLE, GRB.UNBOUNDED] and self.model.SolCount > 0):
             print(
                 f"Solution found. Status: {self.model.Status}, Objective: {self.model.ObjVal if self.model.SolCount > 0 else 'N/A'}")
 

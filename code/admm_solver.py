@@ -67,7 +67,7 @@ class ADMMSolver(GraphBasedSolver):
                 if isinstance(v_node, NodeInfo):  # Penalty applies if arc leads to physical node v_node
                     key_jv = (train_id, v_node)
                     cost_penalty_at_v = current_mu.get(key_jv, 0.0) + \
-                        (self.rho / 2.0) * (1 - 2 * current_z_global.get(key_jv, 0.0))
+                                        (self.rho / 2.0) * (1 - 2 * current_z_global.get(key_jv, 0.0))
 
                 arc_effective_profit = original_profit - cost_penalty_at_v
 
@@ -107,7 +107,7 @@ class ADMMSolver(GraphBasedSolver):
             for node_v in self._all_occupiable_nodes:
                 key_jv = (train_id, node_v)
                 d_jv[key_jv] = -current_mu.get(key_jv, 0.0) + \
-                    (self.rho / 2.0) * (1 - 2 * current_z_local.get(key_jv, 0.0))
+                               (self.rho / 2.0) * (1 - 2 * current_z_local.get(key_jv, 0.0))
 
         # For each (station, type), solve a 1D DP
         for s_idx in range(self.num_stations):

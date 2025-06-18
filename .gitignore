@@ -174,5 +174,6 @@ out/
 *.blg
 *.out
 *.toc
-*.log
 *.synctex.gz
+
+!report/fig/*.pdf
